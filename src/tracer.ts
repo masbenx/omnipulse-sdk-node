@@ -42,13 +42,17 @@ export class Tracer {
         this.transport.addSpan(this.formatSpanForExport(span));
     }
 
+    public runWithSpan<T>(span: Span, callback: () => T): T {
+        return this.asyncLocalStorage.run(span.context, callback);
+    }
+
     /**
      * Wraps a callback function in a new span.
      */
     public trace<T>(name: string, callback: (span: Span) => T): T {
         const span = this.startSpan(name);
 
-        return this.asyncLocalStorage.run(span.context, () => {
+        return this.runWithSpan(span, () => {
             try {
                 const result = callback(span);
                 if (result instanceof Promise) {
