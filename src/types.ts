@@ -61,3 +61,13 @@ export interface SpanEvent {
     timestamp: string;
     attributes?: Record<string, any>;
 }
+
+export interface JobEntry {
+    job_name: string;
+    queue?: string;
+    duration_ms: number;
+    wait_time_ms: number;
+    status: 'succeeded' | 'failed' | 'error';
+    error?: string;
+    timestamp?: string;
+}
