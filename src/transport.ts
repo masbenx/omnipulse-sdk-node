@@ -2,12 +2,13 @@ import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
 import { URL } from 'url';
-import { LogEntry, OmniPulseConfig } from './types';
+import { LogEntry, OmniPulseConfig, JobEntry } from './types';
 
 export class Transport {
     private config: OmniPulseConfig;
     private logQueue: LogEntry[] = [];
     private spanQueue: any[] = []; // Using any for now, better to use Span interface
+    private jobQueue: JobEntry[] = [];
     private flushInterval: NodeJS.Timeout | null = null;
     private readonly BATCH_SIZE = 50;
     private readonly FLUSH_MS = 5000;
@@ -22,6 +23,7 @@ export class Transport {
         this.flushInterval = setInterval(() => {
             this.flushLogs();
             this.flushTraces();
+            this.flushJobs();
         }, this.FLUSH_MS);
     }
 
@@ -36,6 +38,13 @@ export class Transport {
         this.spanQueue.push(span);
         if (this.spanQueue.length >= this.BATCH_SIZE) {
             this.flushTraces();
+        }
+    }
+
+    public addJob(job: JobEntry) {
+        this.jobQueue.push(job);
+        if (this.jobQueue.length >= this.BATCH_SIZE) {
+            this.flushJobs();
         }
     }
 
@@ -77,6 +86,34 @@ export class Transport {
         }
     }
 
+    public async flushJobs() {
+        if (this.jobQueue.length === 0) return;
+
+        const batch = [...this.jobQueue];
+        this.jobQueue = [];
+
+        for (const job of batch) {
+            try {
+                // Background jobs are usually individual events in current API
+                // Wait, backend api.Post("/app-job", ...) handles one job at a time?
+                // Let's check backend service.go IngestAppJob.
+                await this.send('/api/ingest/app-job', {
+                    job_name: job.job_name,
+                    queue: job.queue,
+                    duration_ms: job.duration_ms,
+                    wait_time_ms: job.wait_time_ms,
+                    status: job.status,
+                    error: job.error,
+                    ts: job.timestamp || new Date().toISOString()
+                });
+            } catch (err) {
+                if (this.config.debug) {
+                    console.error('[OmniPulse SDK] Failed to flush job:', err);
+                }
+            }
+        }
+    }
+
     private send(path: string, payload: any): Promise<void> {
         return new Promise((resolve, reject) => {
             const data = JSON.stringify(payload);
@@ -102,7 +139,7 @@ export class Transport {
                         'Content-Encoding': 'gzip',
                         'Content-Length': buffer.length,
                         'X-Ingest-Key': this.config.apiKey,
-                        'User-Agent': 'omnipulse-node-sdk/v0.1.1'
+                        'User-Agent': 'omnipulse-node-sdk/v0.1.2'
                     },
                     timeout: 2000 // Short timeout for fire-and-forget
                 };
@@ -137,5 +174,7 @@ export class Transport {
         if (this.flushInterval) clearInterval(this.flushInterval);
         // Attempt final flush
         this.flushLogs();
+        this.flushTraces();
+        this.flushJobs();
     }
 }

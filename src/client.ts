@@ -1,7 +1,7 @@
 import { Logger } from './logger';
 import { Tracer } from './tracer';
 import { Transport } from './transport';
-import { OmniPulseConfig } from './types';
+import { OmniPulseConfig, JobEntry } from './types';
 import * as http from 'http';
 import * as https from 'https';
 import { URL } from 'url';
@@ -102,7 +102,7 @@ export class OmniPulseClient {
                         'Content-Type': 'application/json',
                         'Content-Length': Buffer.byteLength(payload),
                         'X-Ingest-Key': this.config!.apiKey,
-                        'User-Agent': 'omnipulse-node-sdk/v0.1.1'
+                        'User-Agent': 'omnipulse-node-sdk/v0.1.2'
                     },
                     timeout: 10000
                 };
@@ -157,10 +157,19 @@ export class OmniPulseClient {
     }
 
     /**
+     * Log a background job execution
+     * @param job Job execution details
+     */
+    public logJob(job: JobEntry) {
+        if (!this.transport) return;
+        this.transport.addJob(job);
+    }
+
+    /**
      * Get SDK version
      */
     public version(): string {
-        return 'v0.1.1';
+        return 'v0.1.2';
     }
 
     /**
