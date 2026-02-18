@@ -58,7 +58,7 @@ export class Transport {
             await this.send('/api/ingest/app-logs', {
                 service_name: this.config.serviceName || 'node-app',
                 environment: this.config.environment || 'production',
-                logs: batch
+                entries: batch
             });
         } catch (err) {
             if (this.config.debug) {

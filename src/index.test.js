@@ -99,14 +99,14 @@ describe('Logger', () => {
         expect(mockTransport.addLog.mock.calls[0][0].level).toBe('debug');
     });
 
-    it('should include attributes', () => {
+    it('should include meta', () => {
         logger.info('with attrs', { foo: 'bar', count: 42 });
-        expect(mockTransport.addLog.mock.calls[0][0].attributes).toEqual({ foo: 'bar', count: 42 });
+        expect(mockTransport.addLog.mock.calls[0][0].meta).toEqual({ foo: 'bar', count: 42 });
     });
 
-    it('should handle undefined attributes', () => {
+    it('should handle undefined meta', () => {
         logger.info('no attrs');
-        expect(mockTransport.addLog.mock.calls[0][0].attributes).toBeUndefined();
+        expect(mockTransport.addLog.mock.calls[0][0].meta).toBeUndefined();
     });
 
     it('should generate valid ISO timestamp', () => {

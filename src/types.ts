@@ -33,7 +33,8 @@ export interface LogEntry {
     level: 'info' | 'warn' | 'error' | 'debug';
     message: string;
     timestamp: string; // ISO string using microsecond/nanosecond if possible
-    attributes?: Record<string, any>;
+    service?: string;
+    meta?: Record<string, any>;
     trace_id?: string;
     span_id?: string;
 }

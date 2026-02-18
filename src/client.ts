@@ -75,11 +75,12 @@ export class OmniPulseClient {
         const payload = JSON.stringify({
             service_name: this.config.serviceName || 'node-app',
             environment: this.config.environment || 'production',
-            logs: [{
+            entries: [{
                 level: 'info',
                 message: 'OmniPulse SDK test connection successful',
                 timestamp: new Date().toISOString(),
-                attributes: {
+                service: this.config.serviceName || 'node-app',
+                meta: {
                     sdk: 'node',
                     test: 'true',
                     node_version: process.version
