@@ -8,12 +8,12 @@ export class Logger {
         this.transport = transport;
     }
 
-    private log(level: LogEntry['level'], message: string, attributes?: Record<string, any>) {
+    private log(level: LogEntry['level'], message: string, meta?: Record<string, any>) {
         const entry: LogEntry = {
             level,
             message,
             timestamp: new Date().toISOString(),
-            attributes
+            meta
         };
 
         // TODO: Attach TraceContext if inside a Span
@@ -21,19 +21,19 @@ export class Logger {
         this.transport.addLog(entry);
     }
 
-    public info(message: string, attributes?: Record<string, any>) {
-        this.log('info', message, attributes);
+    public info(message: string, meta?: Record<string, any>) {
+        this.log('info', message, meta);
     }
 
-    public warn(message: string, attributes?: Record<string, any>) {
-        this.log('warn', message, attributes);
+    public warn(message: string, meta?: Record<string, any>) {
+        this.log('warn', message, meta);
     }
 
-    public error(message: string, attributes?: Record<string, any>) {
-        this.log('error', message, attributes);
+    public error(message: string, meta?: Record<string, any>) {
+        this.log('error', message, meta);
     }
 
-    public debug(message: string, attributes?: Record<string, any>) {
-        this.log('debug', message, attributes);
+    public debug(message: string, meta?: Record<string, any>) {
+        this.log('debug', message, meta);
     }
 }
