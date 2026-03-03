@@ -7,6 +7,7 @@ import { LogEntry, OmniPulseConfig, JobEntry } from './types';
 export class Transport {
     private config: OmniPulseConfig;
     private logQueue: LogEntry[] = [];
+    private errorQueue: any[] = [];
     private spanQueue: any[] = []; // Using any for now, better to use Span interface
     private jobQueue: JobEntry[] = [];
     private flushInterval: NodeJS.Timeout | null = null;
@@ -22,6 +23,7 @@ export class Transport {
         if (this.flushInterval) clearInterval(this.flushInterval);
         this.flushInterval = setInterval(() => {
             this.flushLogs();
+            this.flushErrors();
             this.flushTraces();
             this.flushJobs();
         }, this.FLUSH_MS);
@@ -31,6 +33,13 @@ export class Transport {
         this.logQueue.push(entry);
         if (this.logQueue.length >= this.BATCH_SIZE) {
             this.flushLogs();
+        }
+    }
+
+    public addError(error: any) {
+        this.errorQueue.push(error);
+        if (this.errorQueue.length >= this.BATCH_SIZE) {
+            this.flushErrors();
         }
     }
 
@@ -63,6 +72,26 @@ export class Transport {
         } catch (err) {
             if (this.config.debug) {
                 console.error('[OmniPulse SDK] Failed to flush logs:', err);
+            }
+        }
+    }
+
+    public async flushErrors() {
+        if (this.errorQueue.length === 0) return;
+
+        const batch = [...this.errorQueue];
+        this.errorQueue = [];
+
+        for (const error of batch) {
+            try {
+                // Ensure base fields if missing
+                if (!error.env) error.env = this.config.environment || 'production';
+
+                await this.send('/api/ingest/app-errors', error);
+            } catch (err) {
+                if (this.config.debug) {
+                    console.error('[OmniPulse SDK] Failed to flush error:', err);
+                }
             }
         }
     }
@@ -139,7 +168,7 @@ export class Transport {
                         'Content-Encoding': 'gzip',
                         'Content-Length': buffer.length,
                         'X-Ingest-Key': this.config.apiKey,
-                        'User-Agent': 'omnipulse-node-sdk/v0.1.2'
+                        'User-Agent': 'omnipulse-node-sdk/v0.1.3'
                     },
                     timeout: 2000 // Short timeout for fire-and-forget
                 };
@@ -174,6 +203,7 @@ export class Transport {
         if (this.flushInterval) clearInterval(this.flushInterval);
         // Attempt final flush
         this.flushLogs();
+        this.flushErrors();
         this.flushTraces();
         this.flushJobs();
     }
