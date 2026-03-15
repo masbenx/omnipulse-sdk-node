@@ -27,6 +27,11 @@ export interface OmniPulseConfig {
      * Helper to enable/disable console debugging of the SDK itself.
      */
     debug?: boolean;
+
+    /**
+     * Enable continuous CPU profiling (default: false).
+     */
+    enableProfiling?: boolean;
 }
 
 export interface LogEntry {
