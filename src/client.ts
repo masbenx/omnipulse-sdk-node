@@ -1,6 +1,7 @@
 import { Logger } from './logger';
 import { Tracer } from './tracer';
 import { Transport } from './transport';
+import { Profiler } from './profiler';
 import { OmniPulseConfig, JobEntry } from './types';
 import * as http from 'http';
 import * as https from 'https';
@@ -19,6 +20,7 @@ export class OmniPulseClient {
     private config?: OmniPulseConfig;
     public logger: Logger;
     public tracer: Tracer;
+    public profiler?: Profiler;
 
     private constructor() {
         // Uninitialized state
@@ -44,6 +46,9 @@ export class OmniPulseClient {
         this.transport = new Transport(config);
         this.logger = new Logger(this.transport);
         this.tracer = new Tracer(this.transport);
+
+        this.profiler = new Profiler(config);
+        this.profiler.start();
 
         if (config.debug) {
             console.log('[OmniPulse] SDK Initialized', config);
