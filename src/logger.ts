@@ -3,9 +3,14 @@ import { LogEntry } from './types';
 
 export class Logger {
     private transport: Transport;
+    private tracer?: import('./tracer').Tracer;
 
     constructor(transport: Transport) {
         this.transport = transport;
+    }
+
+    public setTracer(tracer: import('./tracer').Tracer) {
+        this.tracer = tracer;
     }
 
     private log(level: LogEntry['level'], message: string, meta?: Record<string, any>) {
@@ -16,7 +21,11 @@ export class Logger {
             meta
         };
 
-        // TODO: Attach TraceContext if inside a Span
+        const ctx = this.tracer?.getCurrentContext();
+        if (ctx) {
+            entry.trace_id = ctx.traceId;
+            entry.span_id = ctx.spanId;
+        }
 
         this.transport.addLog(entry);
     }
