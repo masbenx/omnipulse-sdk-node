@@ -13,7 +13,14 @@ export const expressMiddleware = (options: {
         const url = req.path || req.url;
         const spanName = `${method} ${url}`;
 
-        // Extract headers for distributed tracing? (TODO)
+        let parentContext;
+        const traceparent = req.headers['traceparent'];
+        if (typeof traceparent === 'string') {
+            const parts = traceparent.split('-');
+            if (parts.length === 4) {
+                parentContext = { traceId: parts[1], spanId: parts[2] };
+            }
+        }
 
         OmniPulse.tracer.trace(spanName, (span: Span) => {
             // Add initial attributes

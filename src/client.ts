@@ -46,6 +46,7 @@ export class OmniPulseClient {
         this.transport = new Transport(config);
         this.logger = new Logger(this.transport);
         this.tracer = new Tracer(this.transport);
+        this.logger.setTracer(this.tracer);
 
         this.profiler = new Profiler(config);
         this.profiler.start();

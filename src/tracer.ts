@@ -47,10 +47,10 @@ export class Tracer {
     }
 
     /**
-     * Wraps a callback function in a new span.
+     * Wraps a callback function in a new span, optionally accepting an external trace context.
      */
-    public trace<T>(name: string, callback: (span: Span) => T): T {
-        const span = this.startSpan(name);
+    public trace<T>(name: string, callback: (span: Span) => T, parentContext?: SpanContext): T {
+        const span = this.startSpan(name, parentContext);
 
         return this.runWithSpan(span, () => {
             try {
