@@ -13,6 +13,7 @@ export const fastifyPlugin = async (fastify: any, options: any) => {
         const spanName = `${method} ${url}`;
 
         const span = OmniPulse.tracer.startSpan(spanName);
+        req.__omnipulse_start = Date.now();
 
         span.attributes = {
             'http.method': method,
@@ -43,6 +44,16 @@ export const fastifyPlugin = async (fastify: any, options: any) => {
             }
 
             OmniPulse.tracer.endSpan(span);
+            
+            const reqStart = req.__omnipulse_start || (Array.isArray(span.startTime) ? span.startTime[0] * 1000 + span.startTime[1] / 1e6 : Date.now());
+            OmniPulse.logRequest({
+                timestamp: new Date().toISOString(),
+                method: req.method,
+                route: req.url,
+                status: reply.statusCode,
+                duration_ms: Date.now() - reqStart,
+                trace_id: span.context?.traceId
+            });
         }
         done();
     });

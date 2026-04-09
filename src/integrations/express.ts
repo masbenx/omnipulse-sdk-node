@@ -12,8 +12,10 @@ export const expressMiddleware = (options: {
         const method = req.method;
         const url = req.path || req.url;
         const spanName = `${method} ${url}`;
+        
+        req.__omnipulse_start = Date.now();
 
-        let parentContext;
+        let parentContext: any;
         const traceparent = req.headers['traceparent'];
         if (typeof traceparent === 'string') {
             const parts = traceparent.split('-');
@@ -36,10 +38,22 @@ export const expressMiddleware = (options: {
                 if (span.attributes) {
                     span.attributes['http.status_code'] = res.statusCode;
                 }
-
+                
                 if (res.statusCode >= 500) {
                     span.status = { code: 'error', message: `HTTP ${res.statusCode}` };
                 }
+                
+                const spanStart = Array.isArray(span.startTime) ? (span.startTime[0] * 1000 + span.startTime[1] / 1e6) : Date.now();
+                const durationMs = Date.now() - (req.__omnipulse_start || spanStart);
+                
+                OmniPulse.logRequest({
+                    timestamp: new Date().toISOString(),
+                    method: method,
+                    route: url,
+                    status: res.statusCode,
+                    duration_ms: durationMs,
+                    trace_id: parentContext?.traceId
+                });
             });
 
             // Continue chain

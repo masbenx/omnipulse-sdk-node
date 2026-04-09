@@ -173,10 +173,19 @@ export class OmniPulseClient {
     }
 
     /**
+     * Log a completed HTTP Request summary (for APM metrics)
+     * @param request Request execution details
+     */
+    public logRequest(request: import('./types').RequestEntry) {
+        if (!this.transport) return;
+        this.transport.addRequest(request);
+    }
+
+    /**
      * Get SDK version
      */
     public version(): string {
-        return 'v0.1.2';
+        return 'v0.1.3';
     }
 
     /**

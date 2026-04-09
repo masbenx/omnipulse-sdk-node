@@ -2,7 +2,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
 import { URL } from 'url';
-import { LogEntry, OmniPulseConfig, JobEntry } from './types';
+import { LogEntry, OmniPulseConfig, JobEntry, RequestEntry } from './types';
 
 export class Transport {
     private config: OmniPulseConfig;
@@ -10,6 +10,7 @@ export class Transport {
     private errorQueue: any[] = [];
     private spanQueue: any[] = []; // Using any for now, better to use Span interface
     private jobQueue: JobEntry[] = [];
+    private requestQueue: RequestEntry[] = [];
     private flushInterval: NodeJS.Timeout | null = null;
     private readonly BATCH_SIZE = 50;
     private readonly FLUSH_MS = 5000;
@@ -26,6 +27,7 @@ export class Transport {
             this.flushErrors();
             this.flushTraces();
             this.flushJobs();
+            this.flushRequests();
         }, this.FLUSH_MS);
     }
 
@@ -54,6 +56,13 @@ export class Transport {
         this.jobQueue.push(job);
         if (this.jobQueue.length >= this.BATCH_SIZE) {
             this.flushJobs();
+        }
+    }
+
+    public addRequest(entry: RequestEntry) {
+        this.requestQueue.push(entry);
+        if (this.requestQueue.length >= this.BATCH_SIZE) {
+            this.flushRequests();
         }
     }
 
@@ -143,6 +152,24 @@ export class Transport {
         }
     }
 
+    public async flushRequests() {
+        if (this.requestQueue.length === 0) return;
+
+        const batch = [...this.requestQueue];
+        this.requestQueue = [];
+
+        for (const req of batch) {
+            try {
+                if (!req.env) req.env = this.config.environment || 'production';
+                await this.send('/api/ingest/app-request', req);
+            } catch (err) {
+                if (this.config.debug) {
+                    console.error('[OmniPulse SDK] Failed to flush request:', err);
+                }
+            }
+        }
+    }
+
     private send(path: string, payload: any): Promise<void> {
         return new Promise((resolve, reject) => {
             const data = JSON.stringify(payload);
@@ -206,5 +233,6 @@ export class Transport {
         this.flushErrors();
         this.flushTraces();
         this.flushJobs();
+        this.flushRequests();
     }
 }
