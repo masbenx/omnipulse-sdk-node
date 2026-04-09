@@ -77,3 +77,14 @@ export interface JobEntry {
     error?: string;
     timestamp?: string;
 }
+
+export interface RequestEntry {
+    timestamp: string;
+    method: string;
+    route: string;
+    status: number;
+    duration_ms: number;
+    env?: string;
+    trace_id?: string;
+    request_id?: string;
+}
